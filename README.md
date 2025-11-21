@@ -107,26 +107,7 @@ DevOps:      Docker, GitHub Actions
 - Docker & Docker Compose
 - DeepSeek API key (or OpenAI key)
 
-### Quick Start
-```bash
-# 1. Clone the repo
-git clone <your-repo-url>
-cd AstroGuard
 
-# 2. Set up environment
-cp .env.example .env
-# Edit .env and add your DeepSeek API key
-
-# 3. Start everything
-docker-compose up -d
-
-# 4. Check it's working
-curl http://localhost:8000/
-curl http://localhost:8000/api/v1/health
-
-# 5. View API docs
-open http://localhost:8000/api/v1/docs
-```
 
 ### Development Commands
 ```bash
@@ -151,7 +132,7 @@ docker-compose down
 ## Project Structure
 
 ```
-AstroGuard/
+Echo/
 ├── app/                    # Main application
 │   ├── api/v1/            # API endpoints
 │   ├── core/              # Database, cache, config

@@ -2,7 +2,7 @@
 
 > Building an AI-powered analytics tool that turns messy business data into clear insights. Because small businesses deserve good data tools too.
 
-**Status**: In Development - Phase 3 In Progress (Conversational AI)
+**Status**: In Development - Phase 3 Complete (Reports), Phase 4 Next (Evaluation)
 **Powered by**: DeepSeek 3.2, FastAPI, PostgreSQL, Redis
 **Goal**: Transform 2-hour manual reports into 15-minute automated insights
 
@@ -28,18 +28,19 @@ I don't trust LLMs to do calculations. They're great at explaining things, terri
 
 ## Current Status
 
-### Phase 3 In Progress (Conversational AI)
-Built "Echo" - a conversational data consultant. Think McKinsey analyst meets chatbot, but it actually knows your numbers.
+### Phase 3 Complete (Conversational AI + Reports)
+Built "Echo" - a conversational data consultant that generates structured business reports. Upload a CSV, get professional analysis with metrics and narratives.
 
 **What's working now:**
 - Conversational chat interface with DeepSeek
 - Session management (maintains context across messages)
-- Data context injection (upload a CSV, Echo knows what's in it)
-- Automatic metrics calculation when you load data
+- Structured report generation (3 templates: Revenue, Marketing, Financial)
+- Automatic metrics calculation + AI-generated narratives
+- Report storage and retrieval in PostgreSQL
 - McKinsey-style persona - direct, insightful, no jargon
 - Guardrails to stay on topic and never make up numbers
 
-Try it:
+Try the chat interface:
 ```bash
 # Start the services
 docker-compose up -d
@@ -55,23 +56,33 @@ curl -X POST "http://localhost:8000/api/v1/chat/with-data" \
   -F "file=@data/samples/revenue_sample.csv"
 ```
 
-The conversation feels natural:
-```
-You: "Hi!"
-Echo: "Hey! Ready to dig into some numbers? What's on your mind today?"
+Try the report generation:
+```bash
+# Generate a revenue health report
+curl -X POST "http://localhost:8000/api/v1/reports/generate?template_type=revenue_health" \
+  -F "file=@data/samples/revenue_sample.csv"
 
-You: "What's happening with my revenue?"
-Echo: "Your revenue hit $190K this period - up 12% from last month.
-       The interesting thing is Enterprise plans are driving 60% of
-       that growth. Worth thinking about whether to double down there
-       or diversify."
+# Generate a marketing funnel report
+curl -X POST "http://localhost:8000/api/v1/reports/generate?template_type=marketing_funnel" \
+  -F "file=@data/samples/marketing_sample.csv"
 
-You: "Can you write me a poem?"
-Echo: "Ha, I'm better with spreadsheets than sonnets. But if you want,
-       I can make your revenue trends sound poetic - 'growth curves
-       rising like a hopeful dawn'? Kidding. What data questions can
-       I help with?"
+# List available templates
+curl http://localhost:8000/api/v1/reports/templates
+
+# List your reports
+curl http://localhost:8000/api/v1/reports
+
+# Get a specific report
+curl http://localhost:8000/api/v1/reports/{report_id}
 ```
+
+Each report includes:
+- Executive summary (2-3 sentence overview)
+- Key findings (3-5 data-driven insights)
+- Detailed analysis (patterns, trends, anomalies)
+- Recommendations (2-4 specific, actionable next steps)
+
+The reports are stored in PostgreSQL, so you can retrieve them later or compare across time periods.
 
 ### Phase 2 Complete (Deterministic Analytics)
 The metrics engine is done. 20 business metrics, all deterministic math, no AI hallucinations.
@@ -81,7 +92,7 @@ The metrics engine is done. 20 business metrics, all deterministic math, no AI h
 - 6 financial metrics (CAC, LTV, LTV:CAC Ratio, Gross Margin, Burn Rate, Runway)
 - 7 marketing metrics (Conversion Rate, Channel/Campaign Performance, CPL, ROAS, Lead Velocity, Funnel)
 - Time-series analysis (trends, growth, period comparisons)
-- 143 tests passing, 81% coverage
+- 184 tests passing, 83% coverage
 
 ```bash
 # Calculate revenue metrics from a CSV
@@ -91,14 +102,19 @@ curl -X POST "http://localhost:8000/api/v1/metrics/calculate/revenue" \
 
 All numbers verified against manual calculations. Pure pandas math, no AI involved.
 
-### What's Left in Phase 3
-- Report templates (Weekly Revenue, Marketing Funnel)
-- Structured report generation
-- Report history and versioning
-
 ---
 
 ## API Endpoints
+
+### Reports (Phase 3) - Structured Business Reports
+```
+GET  /api/v1/reports/templates            List available report templates
+GET  /api/v1/reports/templates/{type}     Get template details
+POST /api/v1/reports/generate             Generate report from CSV + template
+GET  /api/v1/reports                      List user's reports
+GET  /api/v1/reports/{id}                 Get specific report
+DELETE /api/v1/reports/{id}               Delete report
+```
 
 ### Chat (Phase 3) - Talk to Echo
 ```
@@ -190,7 +206,7 @@ Backend:     FastAPI, Python 3.11
 Database:    PostgreSQL 15 (async)
 Cache:       Redis 7
 AI/LLM:      DeepSeek 3.2
-Testing:     pytest, pytest-cov (88% coverage)
+Testing:     pytest, pytest-cov (83% coverage)
 Monitoring:  structlog, Prometheus
 DevOps:      Docker, GitHub Actions
 ```
@@ -234,10 +250,12 @@ Echo/
 │   │   ├── health.py      # Health checks
 │   │   ├── ingestion.py   # File upload endpoints
 │   │   ├── metrics.py     # Metrics calculation endpoints
-│   │   └── chat.py        # Conversational AI endpoints (Phase 3)
+│   │   ├── chat.py        # Conversational AI endpoints (Phase 3)
+│   │   └── reports.py     # Report generation endpoints (Phase 3)
 │   ├── core/              # Database, cache, config
 │   ├── models/            # SQLAlchemy & Pydantic models
 │   │   ├── data_source.py # Upload tracking model
+│   │   ├── report.py      # Report storage model
 │   │   └── schemas.py     # API schemas
 │   └── services/          # Business logic
 │       ├── schema_detector.py   # Auto-detect column types
@@ -251,16 +269,20 @@ Echo/
 │       │   ├── financial.py     # 6 financial metrics
 │       │   ├── marketing.py     # 7 marketing metrics
 │       │   └── timeseries.py    # Time-series utilities
-│       └── llm/                 # Conversational AI (Phase 3)
-│           ├── conversation.py  # Chat service, session management
-│           ├── context_builder.py # Formats data/metrics for LLM
-│           └── prompts/
-│               └── consultant.py # Echo's persona and guardrails
-├── tests/                 # Test suite (143 tests)
+│       ├── llm/                 # Conversational AI (Phase 3)
+│       │   ├── conversation.py  # Chat service, session management
+│       │   ├── context_builder.py # Formats data/metrics for LLM
+│       │   └── prompts/
+│       │       └── consultant.py # Echo's persona and guardrails
+│       └── reports/             # Report generation (Phase 3)
+│           ├── templates.py     # Report templates (Revenue, Marketing, Financial)
+│           └── generator.py     # Report generation service
+├── tests/                 # Test suite (184 tests)
 │   ├── api/              # API tests
 │   └── services/         # Service tests
 │       ├── metrics/      # Metrics tests (75 tests)
-│       └── llm/          # Conversation tests (31 tests)
+│       ├── llm/          # Conversation tests (31 tests)
+│       └── reports/      # Report tests (16 tests)
 ├── planning/              # Detailed phase docs
 ├── data/samples/          # Sample datasets
 │   ├── revenue_sample.csv
@@ -308,7 +330,7 @@ Target: >4.0/5 rating on generated insights
 Target: >90% match with expert analysis (using golden datasets)
 
 **Code Quality**
-Current: 81% test coverage, 143 passing tests
+Current: 83% test coverage, 184 passing tests
 
 ---
 
@@ -333,16 +355,16 @@ Current: 81% test coverage, 143 passing tests
 - [x] Time-series utilities (trends, growth, comparisons)
 - [x] Metrics API endpoints
 
-### Phase 3: Intelligence (In Progress)
+### Phase 3: Intelligence (Complete)
 - [x] Conversational chat interface with DeepSeek
 - [x] Echo persona (McKinsey-style data consultant)
 - [x] Session management and conversation history
 - [x] Data context injection (metrics auto-calculated)
 - [x] Guardrails (stays on topic, never fabricates numbers)
-- [x] 31 new tests, 99% coverage on conversation service
-- [ ] Report templates (Weekly Revenue, Marketing Funnel)
-- [ ] Structured report generation
-- [ ] Report history and versioning
+- [x] Report templates (Revenue Health, Marketing Funnel, Financial Overview)
+- [x] Structured report generation (metrics + AI narratives)
+- [x] Report storage and retrieval in PostgreSQL
+- [x] 16 new tests for reports, 87% coverage on generator
 
 ### Phase 4-6: Polish and Production
 - [ ] Evaluation metrics and accuracy tracking
@@ -354,6 +376,28 @@ See `/planning/` for detailed plans.
 ---
 
 ## Development Log
+
+**2025-11-25** - Phase 3 Complete: Report Generation
+Finished the report generation system. You can now upload a CSV and get a professional business report with metrics and AI-generated narratives.
+
+What I built:
+- Report database model with versioning and status tracking
+- 3 report templates: Revenue Health, Marketing Funnel, Financial Overview
+- Report generator service that calculates metrics + generates narratives
+- 5 new API endpoints for report templates, generation, listing, retrieval, deletion
+- 16 new tests, all passing, 87% coverage on report generator
+
+Each template defines required metrics, required columns, and sections (executive summary, key findings, detailed analysis, recommendations). The generator validates data, calculates all metrics deterministically, then uses DeepSeek to generate natural language narratives for each section. Reports are stored in PostgreSQL with full metadata.
+
+Tested it live:
+- Generated revenue report: correctly identified -64% MoM decline, concentration risk in Enterprise product
+- Generated marketing report: calculated 10.21% conversion rate, identified Email as best cost-per-conversion at $1.74
+- Both reports stored and retrievable via API
+
+Files created: 1 model, 3 services, 1 API endpoint, 3 test files
+Files modified: 3 (imports and router registration)
+
+Phase 3 is done. Next up: Phase 4 (evaluation metrics, accuracy tracking).
 
 **2025-11-24** - Phase 3 Started: Conversational AI
 Built "Echo" - the conversational data consultant interface:
@@ -442,6 +486,6 @@ Building in public. Questions? Feedback? Open an issue.
 
 ---
 
-*Last updated: 2025-11-24*
-*Current phase: Phase 3 - Conversational AI (In Progress)*
+*Last updated: 2025-11-25*
+*Current phase: Phase 3 Complete - Moving to Phase 4 (Evaluation)*
 *LLM: DeepSeek 3.2*

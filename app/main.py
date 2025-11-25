@@ -7,6 +7,7 @@ from app.api.v1.router import api_router
 from app.core.database import init_db, close_db
 from app.core.cache import close_redis
 from app.models.data_source import DataSource  # noqa: F401
+from app.models.report import Report  # noqa: F401
 
 settings = get_settings()
 

@@ -1,5 +1,3 @@
-"""LLM Services for Echo - the data consultant."""
-
 from app.services.llm.conversation import (
     ConversationService,
     get_conversation_service,

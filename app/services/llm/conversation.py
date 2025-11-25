@@ -1,13 +1,3 @@
-"""
-Conversation Service - Handles chat interactions with Echo.
-
-This service manages:
-- DeepSeek LLM integration
-- Conversation history
-- Data context injection
-- Response generation
-"""
-
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 from pydantic import BaseModel
@@ -18,7 +8,6 @@ from app.services.llm.prompts.consultant import build_system_prompt
 
 
 class Message(BaseModel):
-    """A single message in a conversation."""
     role: str  # "user" or "assistant"
     content: str
     timestamp: datetime = None
@@ -30,7 +19,6 @@ class Message(BaseModel):
 
 
 class ConversationContext(BaseModel):
-    """Context for the current conversation."""
     session_id: str
     messages: List[Message] = []
     data_summary: Optional[str] = None
@@ -39,7 +27,6 @@ class ConversationContext(BaseModel):
 
 
 class ChatResponse(BaseModel):
-    """Response from the chat service."""
     message: str
     session_id: str
     timestamp: datetime = None
@@ -52,11 +39,6 @@ class ChatResponse(BaseModel):
 
 
 class ConversationService:
-    """
-    Manages conversations with Echo, the data consultant.
-
-    Uses DeepSeek via OpenAI-compatible API.
-    """
 
     def __init__(self):
         settings = get_settings()
@@ -132,18 +114,7 @@ class ConversationService:
         data_summary: Optional[str] = None,
         metrics_summary: Optional[str] = None
     ) -> ChatResponse:
-        """
-        Send a message and get Echo's response.
 
-        Args:
-            session_id: Unique identifier for the conversation
-            user_message: The user's message
-            data_summary: Optional data context to inject
-            metrics_summary: Optional metrics context to inject
-
-        Returns:
-            ChatResponse with Echo's reply
-        """
         # Get or create session
         session = self.get_or_create_session(session_id)
 

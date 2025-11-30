@@ -11,6 +11,7 @@ from app.models.data_source import DataSource  # noqa: F401
 from app.models.report import Report  # noqa: F401
 from app.models.usage_metric import UsageMetric  # noqa: F401
 from app.models.feedback import Feedback  # noqa: F401
+from app.models.experiment import Experiment, VariantResult  # noqa: F401
 
 settings = get_settings()
 

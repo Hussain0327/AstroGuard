@@ -171,3 +171,163 @@ class PortfolioStats(BaseModel):
     accuracy_rate: float
     total_insights_generated: int
     headline_metrics: Dict[str, str]
+
+
+# ============================================================
+# Experimentation / A/B Testing Schemas
+# ============================================================
+
+class ExperimentStatusEnum(str, Enum):
+    """Status of an experiment lifecycle."""
+    DRAFT = "draft"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    STOPPED = "stopped"
+
+
+class ExperimentDecisionEnum(str, Enum):
+    """Decision outcome after statistical analysis."""
+    SHIP_VARIANT = "ship_variant"
+    KEEP_CONTROL = "keep_control"
+    INCONCLUSIVE = "inconclusive"
+    PENDING = "pending"
+
+
+class CreateExperimentRequest(BaseModel):
+    """Request body for creating a new experiment."""
+    name: str = Field(..., min_length=1, max_length=200)
+    hypothesis: str = Field(..., min_length=10, description="The hypothesis being tested")
+    description: Optional[str] = None
+    primary_metric: str = Field(..., description="Primary KPI to measure (e.g., 'signup_conversion')")
+    secondary_metrics: Optional[List[str]] = None
+    funnel_stage: Optional[str] = Field(None, description="Funnel stage being tested (signup, activation, retention)")
+    significance_level: float = Field(0.05, ge=0.01, le=0.20, description="Alpha level for statistical significance")
+    minimum_detectable_effect: Optional[float] = Field(None, description="MDE in percentage points")
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+
+class UpdateExperimentRequest(BaseModel):
+    """Request body for updating an experiment."""
+    name: Optional[str] = Field(None, min_length=1, max_length=200)
+    hypothesis: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[ExperimentStatusEnum] = None
+    end_date: Optional[datetime] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+
+class VariantResultRequest(BaseModel):
+    """Request body for submitting variant results."""
+    variant_name: str = Field(..., description="Name of the variant (e.g., 'control', 'variant_a')")
+    is_control: bool = Field(False, description="Whether this is the control group")
+    users: int = Field(..., ge=1, description="Total users in this variant")
+    conversions: int = Field(..., ge=0, description="Number of users who converted")
+    revenue: Optional[float] = Field(None, ge=0, description="Total revenue from variant")
+    avg_order_value: Optional[float] = Field(None, ge=0)
+    funnel_metrics: Optional[Dict[str, int]] = Field(None, description="Funnel breakdown by stage")
+
+
+class SubmitVariantResultsRequest(BaseModel):
+    """Request body for submitting results for multiple variants."""
+    variants: List[VariantResultRequest] = Field(..., min_length=2, description="Results for each variant (min 2)")
+
+
+class VariantResultResponse(BaseModel):
+    """Response for a single variant's results."""
+    id: str
+    variant_name: str
+    is_control: bool
+    users: int
+    conversions: int
+    conversion_rate: float
+    revenue: Optional[float] = None
+    avg_order_value: Optional[float] = None
+    funnel_metrics: Optional[Dict[str, int]] = None
+    recorded_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class StatisticalResult(BaseModel):
+    """Statistical analysis results for an experiment."""
+    control_conversion_rate: float
+    variant_conversion_rate: float
+    absolute_lift: float  # Percentage points difference
+    relative_lift: float  # Percentage improvement
+    confidence_interval_lower: float
+    confidence_interval_upper: float
+    z_score: float
+    p_value: float
+    is_significant: bool
+    sample_size_adequate: bool
+    power: Optional[float] = None
+
+
+class ExperimentSummary(BaseModel):
+    """Complete summary of an experiment with statistical analysis."""
+    id: str
+    name: str
+    hypothesis: str
+    description: Optional[str]
+    primary_metric: str
+    funnel_stage: Optional[str]
+    status: ExperimentStatusEnum
+    significance_level: float
+
+    # Variant results
+    control: Optional[VariantResultResponse] = None
+    variant: Optional[VariantResultResponse] = None
+
+    # Statistical analysis
+    statistics: Optional[StatisticalResult] = None
+
+    # Decision
+    decision: ExperimentDecisionEnum
+    decision_rationale: Optional[str]
+
+    # Timestamps
+    start_date: Optional[datetime]
+    end_date: Optional[datetime]
+    created_at: datetime
+
+
+class ExperimentResponse(BaseModel):
+    """Response for experiment details."""
+    id: str
+    name: str
+    hypothesis: str
+    description: Optional[str]
+    primary_metric: str
+    secondary_metrics: Optional[List[str]]
+    funnel_stage: Optional[str]
+    significance_level: float
+    minimum_detectable_effect: Optional[float]
+    status: ExperimentStatusEnum
+    decision: ExperimentDecisionEnum
+    start_date: Optional[datetime]
+    end_date: Optional[datetime]
+    created_at: datetime
+    updated_at: datetime
+    variants: List[VariantResultResponse] = []
+
+    class Config:
+        from_attributes = True
+
+
+class ExperimentListResponse(BaseModel):
+    """Response for listing experiments."""
+    experiments: List[ExperimentResponse]
+    total: int
+
+
+class ExperimentExplanation(BaseModel):
+    """LLM-generated explanation of experiment results."""
+    experiment_id: str
+    summary: str  # One-paragraph executive summary
+    key_findings: List[str]  # Bullet points
+    recommendation: str  # Clear recommendation
+    caveats: List[str]  # Important limitations or considerations
+    next_steps: List[str]  # Suggested follow-up actions

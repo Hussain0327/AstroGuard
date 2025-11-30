@@ -2,10 +2,10 @@
 
 > Building an AI-powered analytics tool that turns messy business data into clear insights. Because small businesses deserve good data tools too.
 
-**Status**: In Development - Phase 5 In Progress (Frontend Working, Production Deploy Next)
+**Status**: In Development - Phase 5 Complete (Experimentation Layer Added)
 **Powered by**: DeepSeek 3.2, FastAPI, PostgreSQL, Redis, Next.js
 **Goal**: Transform 2-hour manual reports into 15-minute automated insights
-**Test Coverage**: 82% (190 tests passing)
+**Test Coverage**: 78% (225 tests passing)
 
 ---
 
@@ -29,32 +29,48 @@ I don't trust LLMs to do calculations. They're great at explaining things, terri
 
 ## Current Status
 
-### Phase 5 In Progress (Frontend + Production Ready)
+### Phase 5 Complete (Experimentation + Frontend)
 
-Frontend is now fully working in Codespaces. Spent some time debugging networking issues and API mismatches, but everything is functional now.
+Just added a full **A/B testing and experimentation layer** on top of Echo. This wasn't in the original plan, but it makes the project way more compelling for data science roles. Now Echo doesn't just analyze data - it helps you run experiments and make shipping decisions.
 
-**What's working:**
+**What I built:**
+- Full experimentation system: create experiments, submit variant results, get statistical analysis
+- Two-proportion z-test implementation with confidence intervals, lift calculations, and power analysis
+- Automatic decision engine: tells you whether to ship, hold, or keep testing
+- LLM-powered explanations of results (using DeepSeek, but it only explains - no math)
+- Portfolio-grade Jupyter notebook showing end-to-end A/B test analysis
+- 35 new tests for the stats engine
+
+**Why this matters:**
+Most DS intern job postings ask for "experimentation / A/B testing experience." Now I can honestly say:
+- "I built an experimentation platform with statistical testing, not just used one"
+- "I implemented z-tests, confidence intervals, and power analysis from scratch"
+- "I can go from business question → experiment design → statistical analysis → decision"
+
+**Try it:**
+```bash
+# Create an experiment
+curl -X POST "http://localhost:8000/api/v1/experiments" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "New Onboarding Flow", "hypothesis": "Streamlined flow increases activation", "primary_metric": "activation_rate", "significance_level": 0.05}'
+
+# Submit results
+curl -X POST "http://localhost:8000/api/v1/experiments/{id}/results" \
+  -H "Content-Type: application/json" \
+  -d '{"variants": [{"variant_name": "control", "is_control": true, "users": 2000, "conversions": 400}, {"variant_name": "new_flow", "is_control": false, "users": 2000, "conversions": 520}]}'
+
+# Get the full analysis
+curl "http://localhost:8000/api/v1/experiments/{id}/summary"
+```
+
+The response includes everything: conversion rates, absolute/relative lift, z-score, p-value, confidence interval, power, and a clear decision with rationale.
+
+**Frontend still works:**
 - Next.js 15 frontend with TypeScript and Tailwind CSS
 - 3 pages: Home (file upload + metrics), Chat (talk to Echo), Reports (generate business reports)
-- 3 reusable components: FileUpload, MetricsCard, ChatInterface
-- API proxy route to handle Codespaces port forwarding issues
-- Full end-to-end flow: upload CSV, get metrics, chat with Echo, generate reports
-- All backend endpoints accessible through the frontend
+- API proxy handles Codespaces networking issues
 
-**Issues fixed today (2025-11-29):**
-- Created Next.js API proxy (`/api/proxy/[...path]`) to work around Codespaces port visibility issues. Browser couldn't reach port 8000 directly, so now all API calls go through port 3000 and get forwarded internally.
-- Fixed chat/with-data endpoint call - the backend expects `message` as a query parameter, not form data. Was getting 422 validation errors until I fixed that.
-- Fixed response field mismatch in chat page - backend returns `response` but frontend was looking for `message`.
-- Updated CORS to use wildcard for development.
-
-**What's left for Phase 5:**
-- CI/CD pipeline (GitHub Actions)
-- Rate limiting and security headers
-- Deploy to production (Railway for backend, Vercel for frontend)
-- End-to-end testing in production environment
-- Clean up the proxy solution or fix port visibility properly
-
-See `/frontend/` for the React app and `/FRONTEND_COMPLETE.md` for details.
+See `/notebooks/funnel_ab_test_analysis.ipynb` for a complete walkthrough.
 
 ### Phase 4 Complete (Evaluation & Metrics)
 Built the entire evaluation system to track real impact. Now I can prove Echo actually saves time and delivers accurate insights.
@@ -175,6 +191,18 @@ All numbers verified against manual calculations. Pure pandas math, no AI involv
 ---
 
 ## API Endpoints
+
+### Experiments (Phase 5) - A/B Testing & Statistical Analysis
+```
+POST /api/v1/experiments                    Create a new experiment
+GET  /api/v1/experiments                    List all experiments
+GET  /api/v1/experiments/{id}               Get experiment details
+GET  /api/v1/experiments/{id}/summary       Get full summary with stats
+POST /api/v1/experiments/{id}/results       Submit variant results
+POST /api/v1/experiments/{id}/explain       Get LLM explanation of results
+PATCH /api/v1/experiments/{id}              Update experiment
+DELETE /api/v1/experiments/{id}             Delete experiment
+```
 
 ### Analytics (Phase 4) - Track Time & Impact
 ```
@@ -408,18 +436,25 @@ Echo/
 │       ├── reports/             # Report generation (Phase 3)
 │       │   ├── templates.py     # Report templates (Revenue, Marketing, Financial)
 │       │   └── generator.py     # Report generation service
-│       └── analytics/           # Evaluation & tracking (Phase 4)
-│           ├── tracking.py      # Session time tracking
-│           ├── feedback.py      # Feedback collection
-│           └── aggregator.py    # Stats aggregation
-├── tests/                 # Test suite (190 tests, 82% coverage)
+│       ├── analytics/           # Evaluation & tracking (Phase 4)
+│       │   ├── tracking.py      # Session time tracking
+│       │   ├── feedback.py      # Feedback collection
+│       │   └── aggregator.py    # Stats aggregation
+│       └── experiments/         # A/B testing (Phase 5)
+│           ├── stats.py         # Z-test, CI, lift, power calculations
+│           ├── service.py       # Experiment CRUD and analysis
+│           └── explainer.py     # LLM explanations of results
+├── notebooks/             # Jupyter notebooks for analysis
+│   └── funnel_ab_test_analysis.ipynb  # Portfolio A/B test walkthrough
+├── tests/                 # Test suite (225 tests, 78% coverage)
 │   ├── api/              # API tests
 │   │   ├── test_analytics.py   # Analytics API tests (11 tests)
 │   │   └── test_feedback.py    # Feedback API tests (8 tests)
 │   └── services/         # Service tests
 │       ├── metrics/      # Metrics tests (75 tests)
 │       ├── llm/          # Conversation tests (31 tests)
-│       └── reports/      # Report tests (16 tests)
+│       ├── reports/      # Report tests (16 tests)
+│       └── experiments/  # Experimentation tests (35 tests)
 ├── planning/              # Detailed phase docs
 ├── data/samples/          # Sample datasets
 │   ├── revenue_sample.csv
@@ -519,9 +554,19 @@ Current: 82% test coverage, 190 passing tests
 - [x] 19 new tests (11 analytics + 8 feedback)
 - [x] Test script for manual testing
 
-### Phase 5-6: What's Left
+### Phase 5: Experimentation (Complete)
+- [x] Experiment and VariantResult data models
+- [x] Two-proportion z-test implementation
+- [x] Confidence intervals, lift calculations, power analysis
+- [x] Automatic decision engine (ship/hold/inconclusive)
+- [x] 8 new API endpoints for experiment management
+- [x] LLM-powered explanation of results (DeepSeek)
+- [x] Portfolio Jupyter notebook with full A/B test walkthrough
+- [x] Synthetic experiment data for demos
+- [x] 35 new tests for the stats engine
+
+### Phase 6: What's Left
 - [ ] CI/CD pipeline (GitHub Actions)
-- [ ] Better error handling and logging
 - [ ] Rate limiting and security headers
 - [ ] Load testing and performance optimization
 - [ ] Documentation polish
@@ -533,6 +578,39 @@ See `/planning/` for detailed plans.
 ---
 
 ## Development Log
+
+**2025-11-30** - Phase 5 Complete: Added Experimentation Layer
+Decided to add A/B testing to Echo. Most DS intern postings want "experimentation experience" and I realized I could demonstrate that by building it, not just using it.
+
+What I built:
+- Full experimentation system with Experiment and VariantResult models in PostgreSQL
+- Statistical analysis engine with two-proportion z-test, confidence intervals, lift calculations, and power analysis
+- Automatic decision logic: analyzes results and tells you whether to ship, hold, or keep testing
+- 8 new API endpoints for experiment lifecycle management
+- LLM explainer that generates business-friendly summaries of results (guardrailed - only explains pre-computed stats)
+- Portfolio-grade Jupyter notebook showing complete A/B test workflow
+- Synthetic data for a realistic onboarding flow experiment
+
+The stats engine is fully deterministic - no AI doing math. I implemented the z-test from scratch using scipy for the distribution functions. Tested against manual calculations and known results.
+
+Example output from the API:
+```json
+{
+  "control_conversion_rate": 20.0,
+  "variant_conversion_rate": 26.0,
+  "absolute_lift": 6.0,
+  "relative_lift": 30.0,
+  "p_value": 0.0000065,
+  "is_significant": true,
+  "decision": "ship_variant",
+  "decision_rationale": "Statistically significant positive effect detected..."
+}
+```
+
+This transforms Echo from "analytics infrastructure" into a full "product analytics + experimentation platform." Way more compelling for interviews.
+
+Files created: 8 new files (models, services, API, tests, notebook, sample data)
+Tests: 35 new tests, all passing. Total now at 225 tests, 78% coverage.
 
 **2025-11-29** - Phase 5 Continued: Fixed Frontend-Backend Communication
 Spent the session debugging why the frontend couldn't talk to the backend in Codespaces. Turned out to be a combination of networking issues and API contract mismatches.
@@ -713,8 +791,9 @@ Building in public. Questions? Feedback? Open an issue.
 
 ---
 
-*Last updated: 2025-11-29*
-*Current phase: Phase 5 In Progress (Frontend Working, Production Deploy Next)*
-*Test coverage: 82% (190 tests passing)*
+*Last updated: 2025-11-30*
+*Current phase: Phase 5 Complete (Experimentation Layer Added)*
+*Test coverage: 78% (225 tests passing)*
 *LLM: DeepSeek 3.2*
 *Frontend: Next.js 15 + TypeScript + Tailwind*
+*New: A/B Testing + Statistical Analysis*

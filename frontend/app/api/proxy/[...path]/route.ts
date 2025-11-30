@@ -61,7 +61,7 @@ export async function POST(
           const arrayBuffer = await value.arrayBuffer();
 
           // Determine MIME type
-          let mimeType = value.type;
+          const mimeType = value.type;
           const isCSV = value.name.toLowerCase().endsWith('.csv');
           const isExcel = value.name.toLowerCase().endsWith('.xlsx');
 
@@ -92,7 +92,32 @@ export async function POST(
         body: outgoingFormData,
       });
     } else if (contentType.includes('application/json')) {
-      const jsonBody = await request.json();
+      // Read raw text first to handle potential encoding issues
+      const rawBody = await request.text();
+      let jsonBody: unknown;
+      try {
+        jsonBody = JSON.parse(rawBody);
+      } catch {
+        // If JSON parsing fails, forward as text
+        response = await fetch(`${BACKEND_URL}/${targetPath}${queryString}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: rawBody,
+        });
+
+        if (!response.ok) {
+          const text = await response.text();
+          try {
+            const json = JSON.parse(text);
+            return NextResponse.json(json, { status: response.status });
+          } catch {
+            return NextResponse.json({ detail: text }, { status: response.status });
+          }
+        }
+        const data = await response.json();
+        return NextResponse.json(data, { status: response.status });
+      }
+
       response = await fetch(`${BACKEND_URL}/${targetPath}${queryString}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

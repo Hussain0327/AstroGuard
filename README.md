@@ -2,8 +2,13 @@
 
 An analytics platform I built to turn messy business data into something useful. Upload a CSV, get metrics, see trends, ask questions in plain English.
 
+![Python](https://img.shields.io/badge/Python-3.11-blue)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.104-009688)
+![Next.js](https://img.shields.io/badge/Next.js-15-black)
 ![Tests](https://img.shields.io/badge/tests-238%20passing-brightgreen)
 ![Coverage](https://img.shields.io/badge/coverage-78%25-blue)
+
+**[Live Dashboard Demo](https://echo-analytics.streamlit.app)**
 
 ---
 
@@ -17,21 +22,21 @@ Small businesses have data everywhere - spreadsheets, exports, random CSVs. They
 
 **Analytics Layer**: 20+ business metrics computed deterministically. Revenue trends, cohort retention, customer segmentation, funnel analysis. All tested, all reproducible.
 
-**Interactive Dashboard**: Streamlit app with KPIs, charts, and drill-downs. Filter by date, slice by segment, export what you need.
-
-**Conversational Interface**: Ask questions about your data in plain English. The LLM explains the numbers - it never calculates them. That part is handled by tested Python code.
+**Two Interfaces**:
+- **Streamlit Dashboard** - KPIs, charts, drill-downs for BI-style analysis
+- **Next.js Web App** - Chat interface where you ask questions in plain English, powered by an LLM that explains the numbers (but never calculates them - that's handled by tested Python code)
 
 ---
 
 ## Screenshots
 
-### Dashboard
+### Streamlit Dashboard
 
 | Overview | Revenue Analysis | Customer Segmentation |
 |:--------:|:----------------:|:---------------------:|
 | ![Dashboard](docs/screenshots/dashboard-overview.png) | ![Revenue](docs/screenshots/dashboard-revenue.png) | ![Customers](docs/screenshots/dashboard-customers.png) |
 
-### Web App
+### Next.js Web App
 
 | Metrics View | Chat Interface | Reports |
 |:------------:|:--------------:|:-------:|
@@ -42,8 +47,6 @@ Small businesses have data everywhere - spreadsheets, exports, random CSVs. They
 ## Technical Highlights
 
 ### Data Analytics and BI
-
-I wanted to demonstrate the SQL and analysis work that's typically expected in DA roles.
 
 **SQL Portfolio** - 10+ queries in `sql/analytics/` covering:
 - CTEs and window functions (LAG, LEAD, NTILE, ROW_NUMBER)
@@ -73,15 +76,9 @@ FROM monthly;
 - Customer segmentation using RFM and K-means
 - A/B test analysis with z-tests and confidence intervals
 
-**Streamlit Dashboard** - Multi-page app with:
-- KPI cards with period-over-period comparisons
-- Revenue trends with 7-day moving averages
-- Customer segment breakdowns
-- Interactive filters and drill-downs
+**Streamlit Dashboard** - Multi-page app with KPI cards, revenue trends with 7-day moving averages, customer segment breakdowns, and interactive filters.
 
 ### Data Engineering
-
-The pipeline handles real-world data problems.
 
 **ETL with Prefect** - Orchestrated flows for daily metric computation, incremental loads, and error handling.
 
@@ -89,19 +86,17 @@ The pipeline handles real-world data problems.
 
 **Data Quality with Great Expectations** - 26 validation rules catching nulls, duplicates, referential integrity issues, and schema drift before bad data hits the warehouse.
 
-**Data Cleaning** - The `DataAutoFixer` service normalizes column names, parses mixed date formats, strips currency symbols, standardizes booleans, and flags outliers. It handles the garbage so downstream code doesn't have to.
+**Data Cleaning** - The `DataAutoFixer` service normalizes column names, parses mixed date formats, strips currency symbols, standardizes booleans, and flags outliers.
 
 ### Software Engineering
 
-This isn't a script - it's a production-ready application.
-
 **FastAPI Backend** - REST API with structured routers for ingestion, metrics, chat, reports, experiments, and analytics. Request validation with Pydantic, async where it matters.
+
+**Next.js Frontend** - TypeScript, Tailwind CSS, drag-and-drop file upload, real-time metric display, and a chat interface for conversational analytics.
 
 **PostgreSQL + Redis** - Postgres for persistence, Redis for caching expensive metric calculations.
 
 **238 Tests, 78% Coverage** - Unit tests for metrics calculations, integration tests for API endpoints, fixture-based test data.
-
-**Next.js Frontend** - TypeScript, Tailwind, drag-and-drop file upload, real-time metric display.
 
 **Docker Compose** - One command to spin up the full stack locally.
 
@@ -118,16 +113,13 @@ echo/
 │   │   ├── experiments/      # A/B testing
 │   │   └── data_profiler.py  # Data profiling
 │   └── models/               # SQLAlchemy models
+├── frontend/                 # Next.js web app (chat, uploads, reports)
 ├── dashboard/                # Streamlit BI dashboard
 ├── sql/                      # SQL query portfolio
-│   ├── analytics/            # Business queries
-│   ├── profiling/            # Data quality checks
-│   └── views/                # Materialized views
 ├── notebooks/                # Analysis notebooks
 ├── orchestration/            # Prefect ETL flows
 ├── dbt/                      # dbt transformations
 ├── data_quality/             # Great Expectations
-├── frontend/                 # Next.js app
 └── tests/                    # Test suite
 ```
 
@@ -135,15 +127,26 @@ echo/
 |-------|------|
 | API | FastAPI, Python 3.11 |
 | Database | PostgreSQL 15, Redis 7 |
+| Web App | Next.js 15, TypeScript, Tailwind |
 | Dashboard | Streamlit, Plotly |
 | ETL | Prefect 2.14 |
 | Transformations | dbt 1.7 |
 | Data Quality | Great Expectations 0.18 |
-| Frontend | Next.js 15, TypeScript, Tailwind |
 
 ---
 
 ## Running It
+
+### Dashboard (Streamlit)
+
+Live at **[echo-analytics.streamlit.app](https://echo-analytics.streamlit.app)**
+
+Or run locally:
+```bash
+pipx install streamlit --include-deps
+pipx inject streamlit plotly
+streamlit run dashboard/app.py
+```
 
 ### Full Stack (Docker)
 
@@ -161,16 +164,6 @@ cd frontend && npm install && npm run dev
 # Open http://localhost:3000
 ```
 
-### Dashboard Only
-
-```bash
-pipx install streamlit --include-deps
-pipx inject streamlit plotly
-streamlit run dashboard/app.py
-
-# Open http://localhost:8501
-```
-
 ### Notebooks
 
 ```bash
@@ -180,8 +173,6 @@ jupyter notebook notebooks/
 ---
 
 ## What I Learned
-
-Building this taught me a few things:
 
 **Data cleaning is most of the work.** The `DataAutoFixer` went through five rewrites. Real data is messy in ways you don't expect until you see it.
 
@@ -194,4 +185,3 @@ Building this taught me a few things:
 ## License
 
 MIT
-

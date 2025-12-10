@@ -1,0 +1,63 @@
+version: 2
+
+models:
+  - name: stg_transactions
+    description: Cleaned transaction data
+    columns:
+      - name: transaction_id
+        description: Unique transaction identifier
+        tests:
+          - unique
+          - not_null
+      - name: amount
+        description: Transaction amount
+        tests:
+          - not_null
+      - name: transaction_date
+        tests:
+          - not_null
+      - name: status
+        tests:
+          - accepted_values:
+              values: ['completed', 'paid', 'pending', 'refunded', 'cancelled', 'failed']
+
+  - name: stg_marketing_events
+    description: Cleaned marketing event data
+    columns:
+      - name: event_id
+        tests:
+          - unique
+          - not_null
+      - name: channel
+        tests:
+          - not_null
+      - name: leads
+        tests:
+          - not_null
+
+  - name: stg_customers
+    description: Cleaned customer data
+    columns:
+      - name: customer_id
+        tests:
+          - unique
+          - not_null
+      - name: email
+        tests:
+          - not_null
+
+  - name: stg_experiment_assignments
+    description: Cleaned experiment assignment data
+    columns:
+      - name: assignment_id
+        tests:
+          - unique
+          - not_null
+      - name: user_id
+        tests:
+          - not_null
+      - name: variant
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['control', 'variant_a', 'variant_b', 'variant_c', 'treatment']

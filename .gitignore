@@ -67,3 +67,16 @@ data/uploads/
 !data/samples/*.xlsx
 
 node_modules/
+
+# dbt
+dbt/target/
+dbt/dbt_packages/
+dbt/logs/
+dbt/.user.yml
+
+# Great Expectations
+data_quality/uncommitted/
+data_quality/plugins/
+
+# Prefect
+.prefect/

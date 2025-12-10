@@ -1,0 +1,48 @@
+version: 2
+
+sources:
+  - name: raw
+    description: Raw data loaded from CSV uploads and external sources
+    schema: public
+    tables:
+      - name: stg_revenue
+        description: Raw revenue/transaction data from uploads
+        columns:
+          - name: date
+            description: Transaction date
+          - name: amount
+            description: Transaction amount
+          - name: status
+            description: Transaction status
+
+      - name: stg_marketing
+        description: Raw marketing data from uploads
+        columns:
+          - name: date
+            description: Date of marketing activity
+          - name: source
+            description: Marketing channel/source
+          - name: leads
+            description: Number of leads generated
+          - name: conversions
+            description: Number of conversions
+
+      - name: stg_customers
+        description: Raw customer data
+        columns:
+          - name: customer_id
+            description: Unique customer identifier
+          - name: email
+            description: Customer email
+          - name: created_at
+            description: Account creation date
+
+      - name: stg_experiments
+        description: Raw experiment assignment data
+        columns:
+          - name: user_id
+            description: User identifier
+          - name: variant
+            description: Experiment variant assigned
+          - name: converted
+            description: Whether user converted

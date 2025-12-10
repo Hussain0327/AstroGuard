@@ -9,10 +9,54 @@ services:
       - .:/app
     env_file:
       - .env
+    environment:
+      - DATABASE_URL=postgresql://echo_user:echo_password@db:5432/echo_db
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=echo_user
+      - DB_PASSWORD=echo_password
+      - DB_NAME=echo_db
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  prefect:
+    build: .
+    ports:
+      - "4200:4200"
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://echo_user:echo_password@db:5432/echo_db
+      - PREFECT_API_URL=http://0.0.0.0:4200/api
+    depends_on:
+      db:
+        condition: service_healthy
+    command: prefect server start --host 0.0.0.0
+
+  worker:
+    build: .
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://echo_user:echo_password@db:5432/echo_db
+      - PREFECT_API_URL=http://prefect:4200/api
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=echo_user
+      - DB_PASSWORD=echo_password
+      - DB_NAME=echo_db
+    depends_on:
+      - prefect
+      - db
+    command: prefect worker start -p default-pool
 
   db:
     image: postgres:15-alpine

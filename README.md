@@ -1,286 +1,197 @@
 # Echo
 
-AI-powered analytics for small businesses. Turn messy CSVs into clear insights in minutes, not hours.
+An analytics platform I built to turn messy business data into something useful. Upload a CSV, get metrics, see trends, ask questions in plain English.
 
-![Tests Passing](https://img.shields.io/badge/tests-225%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-238%20passing-brightgreen)
 ![Coverage](https://img.shields.io/badge/coverage-78%25-blue)
-![Backend-FastAPI](https://img.shields.io/badge/backend-FastAPI-lightgrey)
-![Frontend-Next.js%2015](https://img.shields.io/badge/frontend-Next.js%2015-orange)
-![LLM-API](https://img.shields.io/badge/LLM-OpenAI%20compatible-purple)
 
-## What It Does
+---
 
-- Cleans and validates raw business data automatically (dates, currency, booleans, column names)
-- Computes 20+ business metrics deterministically (MRR, ARR, CAC, LTV, conversion funnels)
-- Generates plain-English reports powered by an LLM that never does the math
-- Runs A/B test analysis with two-proportion z-tests, confidence intervals, and power analysis
+## The Problem
 
-Everything numeric comes from tested Python code. The LLM only explains and summarizes.
+Small businesses have data everywhere - spreadsheets, exports, random CSVs. They need answers but don't have time to wrestle with formulas or learn BI tools. I wanted to build something that handles the messy parts automatically.
 
-## Why It Exists
+## What I Built
 
-Small teams drown in spreadsheets but cannot hire a data scientist. Echo gives them a focused analytics companion in the browser.
+**Data Pipeline**: Ingest raw files, detect schemas, clean the mess (currency symbols, date formats, inconsistent booleans), validate quality, then calculate metrics.
 
-The core idea: **deterministic metrics + LLM narrative**.
+**Analytics Layer**: 20+ business metrics computed deterministically. Revenue trends, cohort retention, customer segmentation, funnel analysis. All tested, all reproducible.
 
-I do not trust LLMs to do calculations. They are good at explaining patterns and tradeoffs, but not at arithmetic. So:
+**Interactive Dashboard**: Streamlit app with KPIs, charts, and drill-downs. Filter by date, slice by segment, export what you need.
 
-- All metrics and experiment results are computed in Python with tests.
-- The AI only writes the narrative and answers questions about already computed numbers.
+**Conversational Interface**: Ask questions about your data in plain English. The LLM explains the numbers - it never calculates them. That part is handled by tested Python code.
+
+---
 
 ## Screenshots
 
-| Upload and Metrics | Chat Interface | Report Templates |
-|:------------------:|:--------------:|:----------------:|
-| ![Metrics View](docs/screenshots/02-metrics-view.png) | ![Chat](docs/screenshots/03-chat-interface.png) | ![Reports](docs/screenshots/04-reports-page.png) |
+### Dashboard
+
+| Overview | Revenue Analysis | Customer Segmentation |
+|:--------:|:----------------:|:---------------------:|
+| ![Dashboard](docs/screenshots/dashboard-overview.png) | ![Revenue](docs/screenshots/dashboard-revenue.png) | ![Customers](docs/screenshots/dashboard-customers.png) |
+
+### Web App
+
+| Metrics View | Chat Interface | Reports |
+|:------------:|:--------------:|:-------:|
+| ![Metrics](docs/screenshots/02-metrics-view.png) | ![Chat](docs/screenshots/03-chat-interface.png) | ![Reports](docs/screenshots/04-reports-page.png) |
 
 ---
 
-## Skills Demonstrated
+## Technical Highlights
 
-### Data Science and Experimentation
+### Data Analytics and BI
 
-- Designed and implemented a two-proportion z-test engine  
-  (conversion rates, lift, p-value, power analysis)
-- Built an experimentation API: hypothesis to variants to statistical decision
-- Created a portfolio-grade Jupyter notebook for A/B test analysis  
-  (`notebooks/funnel_ab_test_analysis.ipynb`)
+I wanted to demonstrate the SQL and analysis work that's typically expected in DA roles.
 
-### Analytics Engineering
+**SQL Portfolio** - 10+ queries in `sql/analytics/` covering:
+- CTEs and window functions (LAG, LEAD, NTILE, ROW_NUMBER)
+- Cohort retention matrices
+- RFM customer segmentation
+- Funnel conversion analysis
+- Time series with moving averages and anomaly detection
 
-- Built a schema detector for mixed-format business CSVs  
-  (dates, currency, booleans, URLs, emails)
-- Implemented a `DataAutoFixer` that normalizes messy columns before analysis
-- Designed a deterministic metrics engine for 20+ business metrics with 225 automated tests
+```sql
+-- Month-over-month revenue growth
+WITH monthly AS (
+    SELECT DATE_TRUNC('month', transaction_date) AS month,
+           SUM(amount) AS revenue
+    FROM transactions
+    GROUP BY 1
+)
+SELECT month, revenue,
+       LAG(revenue) OVER (ORDER BY month) AS prev_month,
+       ROUND((revenue - LAG(revenue) OVER (ORDER BY month)) /
+             NULLIF(LAG(revenue) OVER (ORDER BY month), 0) * 100, 2) AS growth_pct
+FROM monthly;
+```
 
-### Backend Engineering
+**Jupyter Notebooks** - Four analysis notebooks in `notebooks/`:
+- Cohort retention with heatmaps and survival curves
+- Revenue forecasting with time series decomposition
+- Customer segmentation using RFM and K-means
+- A/B test analysis with z-tests and confidence intervals
 
-- REST API with FastAPI: ingestion, metrics, chat, reports, analytics, experiments
-- PostgreSQL for persistence, Redis for caching
-- Telemetry middleware that tracks time spent per analysis and usage patterns
-- 78 percent test coverage (pytest and coverage reports)
+**Streamlit Dashboard** - Multi-page app with:
+- KPI cards with period-over-period comparisons
+- Revenue trends with 7-day moving averages
+- Customer segment breakdowns
+- Interactive filters and drill-downs
 
-### Frontend
+### Data Engineering
 
-- Next.js 15 with TypeScript and Tailwind CSS
-- File upload with drag-and-drop and real-time metric display
-- Data type detection badges, error handling, responsive design
+The pipeline handles real-world data problems.
 
----
+**ETL with Prefect** - Orchestrated flows for daily metric computation, incremental loads, and error handling.
 
-## Outcomes
+**dbt Models** - Transformations organized into staging, intermediate, and mart layers. Incremental MRR calculations, customer lifetime aggregations.
 
-In internal test runs, Echo reduced a typical 2 hour manual spreadsheet workflow to roughly a 15 minute guided flow.
+**Data Quality with Great Expectations** - 26 validation rules catching nulls, duplicates, referential integrity issues, and schema drift before bad data hits the warehouse.
 
-The evaluation layer tracks:
+**Data Cleaning** - The `DataAutoFixer` service normalizes column names, parses mixed date formats, strips currency symbols, standardizes booleans, and flags outliers. It handles the garbage so downstream code doesn't have to.
 
-- Baseline vs actual time per analysis session
-- Insight accuracy as rated by users
-- Satisfaction scores on generated reports
+### Software Engineering
 
-Based on internal test usage (150+ analysis sessions on sample and synthetic datasets):
+This isn't a script - it's a production-ready application.
 
-- **≈1.85 hours saved** per analysis on average  
-- **4.3/5 satisfaction** across feedback events  
-- **≈94% of insights** marked as accurate by users
+**FastAPI Backend** - REST API with structured routers for ingestion, metrics, chat, reports, experiments, and analytics. Request validation with Pydantic, async where it matters.
 
-These numbers are generated from Echo’s own telemetry and can be recomputed from the logged sessions.
+**PostgreSQL + Redis** - Postgres for persistence, Redis for caching expensive metric calculations.
 
----
+**238 Tests, 78% Coverage** - Unit tests for metrics calculations, integration tests for API endpoints, fixture-based test data.
 
-## Case Study: Should We Ship The New Onboarding Flow?
+**Next.js Frontend** - TypeScript, Tailwind, drag-and-drop file upload, real-time metric display.
 
-**Situation**  
-A SaaS company runs an A/B test on their onboarding. Control has 60 percent activation, variant has 80 percent. They want to know if this lift is real or just noise.
-
-**What Echo does**
-
-1. Upload the experiment results CSV.
-2. Echo calculates:
-   - Conversion rates and relative lift
-   - Two-proportion z-test and p-value
-   - Confidence interval for the lift
-3. Echo produces a plain-English summary:
-   - Whether the effect is statistically significant
-   - How large the lift is
-   - A simple recommendation: ship, hold, or gather more data
-
-For example, a test with 60 percent vs 80 percent activation can yield a relative lift of about 33 percent with a low p-value, leading to a “ship” recommendation.
-
-![Funnel Analysis](docs/screenshots/funnel_analysis.png)
-
-The notebook `notebooks/funnel_ab_test_analysis.ipynb` walks through the full analysis:
-funnel visualization, statistical test, confidence intervals, and a basic business impact projection.
+**Docker Compose** - One command to spin up the full stack locally.
 
 ---
 
 ## Architecture
 
-```text
-Frontend     Next.js 15, React, TypeScript, Tailwind
-API          FastAPI (Python 3.11), structured routers per domain
-Database     PostgreSQL 15 for storage, Redis 7 for caching
-LLM          DeepSeek or OpenAI compatible API (explanations only)
-Testing      pytest, 225 tests, 78 percent coverage
-
+```
 echo/
-├── app/                      # Backend
+├── app/                      # FastAPI backend
 │   ├── api/v1/               # REST endpoints
 │   ├── services/             # Business logic
-│   │   ├── metrics/          # Revenue, marketing, financial metrics
-│   │   ├── experiments/      # A/B testing and statistics
-│   │   ├── llm/              # Conversation and context
-│   │   └── reports/          # Report generation
-│   └── models/               # Database models
-├── frontend/                 # Next.js app
-│   ├── app/                  # Pages (home, chat, reports)
-│   └── components/           # Reusable UI components
+│   │   ├── metrics/          # Metric calculations
+│   │   ├── experiments/      # A/B testing
+│   │   └── data_profiler.py  # Data profiling
+│   └── models/               # SQLAlchemy models
+├── dashboard/                # Streamlit BI dashboard
+├── sql/                      # SQL query portfolio
+│   ├── analytics/            # Business queries
+│   ├── profiling/            # Data quality checks
+│   └── views/                # Materialized views
 ├── notebooks/                # Analysis notebooks
+├── orchestration/            # Prefect ETL flows
+├── dbt/                      # dbt transformations
+├── data_quality/             # Great Expectations
+├── frontend/                 # Next.js app
 └── tests/                    # Test suite
 ```
 
+| Layer | Tech |
+|-------|------|
+| API | FastAPI, Python 3.11 |
+| Database | PostgreSQL 15, Redis 7 |
+| Dashboard | Streamlit, Plotly |
+| ETL | Prefect 2.14 |
+| Transformations | dbt 1.7 |
+| Data Quality | Great Expectations 0.18 |
+| Frontend | Next.js 15, TypeScript, Tailwind |
+
 ---
 
-## Quickstart
+## Running It
 
-### Prerequisites
-
-* Docker and Docker Compose
-* Node.js 18+
-* DeepSeek or OpenAI API key
-
-### Run Locally
+### Full Stack (Docker)
 
 ```bash
-# 1. Clone and configure
 git clone https://github.com/Hussain0327/Echo_Data_Scientist.git
 cd Echo_Data_Scientist
 cp .env.example .env
-# Set your DEEPSEEK_API_KEY or OPENAI_API_KEY in .env
+# Add your DEEPSEEK_API_KEY or OPENAI_API_KEY
 
-# 2. Start backend and services
 docker-compose up -d
 
-# 3. Start frontend
-cd frontend
-npm install
-npm run dev
+# Frontend
+cd frontend && npm install && npm run dev
 
-# 4. Open http://localhost:3000
-# Upload data/samples/revenue_sample.csv to test
+# Open http://localhost:3000
 ```
 
-Backend API docs: `http://localhost:8000/docs`
-
----
-
-## API Overview
-
-### Metrics
-
-```text
-POST /api/v1/metrics/calculate/csv    # Calculate metrics from uploaded file
-GET  /api/v1/metrics/available        # List available metrics
-```
-
-### Chat
-
-```text
-POST /api/v1/chat                     # Send message to Echo
-POST /api/v1/chat/with-data           # Chat with file upload
-```
-
-### Reports
-
-```text
-POST /api/v1/reports/generate         # Generate structured report
-GET  /api/v1/reports/templates        # List report templates
-```
-
-### Experiments
-
-```text
-POST /api/v1/experiments              # Create experiment
-POST /api/v1/experiments/{id}/results # Submit variant results
-GET  /api/v1/experiments/{id}/summary # Get statistical analysis
-```
-
-### Analytics
-
-```text
-POST /api/v1/analytics/session/start  # Start tracking session
-POST /api/v1/analytics/session/end    # End session, calculate time saved
-GET  /api/v1/analytics/portfolio      # Get impact metrics
-```
-
----
-
-## Running Tests
+### Dashboard Only
 
 ```bash
-# Run all tests
-docker-compose exec app pytest
+pipx install streamlit --include-deps
+pipx inject streamlit plotly
+streamlit run dashboard/app.py
 
-# With coverage
-docker-compose exec app pytest --cov=app --cov-report=term-missing
+# Open http://localhost:8501
+```
 
-# Specific test file
-docker-compose exec app pytest tests/services/experiments/test_stats.py -v
+### Notebooks
+
+```bash
+jupyter notebook notebooks/
 ```
 
 ---
 
-## Development Log
+## What I Learned
 
-<details>
-<summary>Click to expand development history</summary>
+Building this taught me a few things:
 
-### 2025-12-02 - Data Intelligence Layer
+**Data cleaning is most of the work.** The `DataAutoFixer` went through five rewrites. Real data is messy in ways you don't expect until you see it.
 
-Built the `DataAutoFixer` service that cleans messy data before analysis. Handles whitespace, currency symbols, date formats, boolean standardization, and column name normalization. Added smart data type detection so Echo only calculates relevant metrics.
+**LLMs are bad at math.** I learned this the hard way. Now Python handles all calculations, and the LLM just explains results it's given. Much more reliable.
 
-### 2025-11-30 - Experimentation Platform
-
-Added full A/B testing capabilities. Implemented two-proportion z-test, confidence intervals, power analysis, and automatic decision logic. Created 8 new API endpoints and a portfolio Jupyter notebook.
-
-### 2025-11-29 - Frontend Fixes
-
-Fixed Codespaces networking issues by creating an API proxy route. Updated chat endpoint to handle response fields correctly.
-
-### 2025-11-25 - Evaluation System
-
-Built session tracking, time savings calculation, feedback collection, and the portfolio stats endpoint. Added telemetry middleware for automatic request logging.
-
-### 2025-11-25 - Report Generation
-
-Finished report generation system with 3 templates (Revenue Health, Marketing Funnel, Financial Overview). Each report includes executive summary, key findings, detailed analysis, and recommendations.
-
-### 2025-11-24 - Conversational AI
-
-Built the Echo persona as a data consultant that explains metrics in plain English. Added session management and data context injection.
-
-### 2025-11-23 - Analytics Engine
-
-Implemented 20 deterministic business metrics across revenue, financial, and marketing categories. Verified against manual calculations.
-
-### 2025-11-22 - Data Ingestion
-
-Built schema detection, validation engine, and file upload endpoints. Handles CSV and Excel files.
-
-### 2025-11-19 - Foundation
-
-Set up Docker environment, FastAPI, PostgreSQL, Redis, and LLM integration.
-
-</details>
+**Testing saves time.** 238 tests sounds like a lot, but they caught regressions constantly. Especially when refactoring the metrics engine.
 
 ---
 
 ## License
 
-MIT License - free for personal and commercial use.
+MIT
 
----
-
-## Contact
-
-Questions or feedback? Open an issue or reach out directly.

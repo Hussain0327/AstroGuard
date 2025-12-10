@@ -80,3 +80,10 @@ data_quality/plugins/
 
 # Prefect
 .prefect/
+
+# Video/media files
+*.webm
+*.mp4
+
+# Streamlit
+.streamlit/secrets.toml
